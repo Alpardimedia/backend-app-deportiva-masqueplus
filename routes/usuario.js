@@ -14,7 +14,14 @@ var Usuario = require('../models/usuario');
 
 app.get('/', (req, res, next) => {
 
-    Usuario.find({}, 'nombre codigo_postal password movil fecha_nacimiento genero email img role').exec(
+    var desde = req.query.desde || 0;
+    desde = Number(desde);
+
+    Usuario.find({}, 'nombre codigo_postal preferencias_deportivas movil fecha_nacimiento genero email img role')
+    .skip(desde)
+    .limit(5)
+    .populate('preferencias_deportivas', 'nombre slug descripcion')
+    .exec(
         (err, usuarios) => {
         
             if(err) {
@@ -24,10 +31,13 @@ app.get('/', (req, res, next) => {
                     errors: err
                 });
             }
-    
-            res.status(200).json({
-                ok: true,
-                usuarios: usuarios
+
+            Usuario.count({}, (err, contador) => {
+                res.status(200).json({
+                    ok: true,
+                    total: contador,
+                    usuarios: usuarios
+                });
             });
     
         }
@@ -59,7 +69,8 @@ app.post('/', mdAutenticacion.verificaToken, (req, res) => {
         // password: bcrypt.hashSync(clave),
         password: bcrypt.hashSync(body.password),
         img: body.img,
-        role: body.role
+        role: body.role,
+        preferencias_deportivas: body.preferencias_deportivas
     });
     
     usuario.save((err, usuarioGuardado) => {
@@ -73,8 +84,7 @@ app.post('/', mdAutenticacion.verificaToken, (req, res) => {
 
         res.status(201).json({
             ok: true,
-            usuario: usuarioGuardado,
-            usuariotoken: req.usuario
+            usuario: usuarioGuardado
         });
     });
 });
@@ -103,13 +113,14 @@ app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
             });
         }
 
-        usuario.nombre = body.nombre,
-        // usuario.codigo_postal = body.codigo_postal,
-        usuario.movil = body.movil,
-        // usuario.fecha_nacimiento = body.fecha_nacimiento,
-        // usuario.genero = body.genero,
-        usuario.email = body.email,
+        usuario.nombre = body.nombre;
+        // usuario.codigo_postal = body.codigo_postal;
+        usuario.movil = body.movil;
+        // usuario.fecha_nacimiento = body.fecha_nacimiento;
+        // usuario.genero = body.genero;
+        usuario.email = body.email;
         usuario.role = body.role;
+        usuario.preferencias_deportivas = body.preferencias_deportivas;
 
         usuario.save((err, usuarioGuardado) => {
             if(err) {
@@ -140,7 +151,7 @@ app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
         if(err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al borra el usuario',
+                mensaje: 'Error al borrar el usuario',
                 errors: err
             });
         }

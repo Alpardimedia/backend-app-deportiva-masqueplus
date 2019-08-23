@@ -18,6 +18,7 @@ var usuarioSchema = new Schema({
     password: { type: String, required: [true, 'La contraseña es obligatoria'] },
     img: { type: String, required: false },
     role: { type: String, required: true, default: 'Usuario', enum: rolesValidos },
+    preferencias_deportivas: { type: Schema.Types.ObjectId, ref: 'Categoria' },
     created_at: { type: Date, default: Date.now() }
 });
 
